@@ -1,13 +1,20 @@
+from multiprocessing import synchronize
 from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor # this is just to display the column names because by default(psycopg2), they don't show
 import time
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, get_db
+
+models.Base.metadata.create_all(bind=engine) # this creates all the tables/models. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
 app = FastAPI()
+
 
 
 class Post(BaseModel):  # defining a schema of what to expect from the frontend and this automitcally does the validation
@@ -49,31 +56,41 @@ def root():
     return {"message": "Hello world"}
 
 
+
 @app.get("/posts")
-def get_posts():
-    cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
-    posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
+def get_posts(db: Session = Depends(get_db)):
+    # cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
+    # posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
+    posts = db.query(models.Post).all()
     return {"data": posts}
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED) # this is to change status code; 201 status code is mostly used after post requests
-def create_posts(post: Post): # post is a pydantic model
+def create_posts(post: Post, db: Session = Depends(get_db)): # post is a pydantic model
 
     # post.dict() is to convert a pydantic model to a dictionary
 
-    cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, # '%s' is for security, it basically sanitizes the input
-    (post.title, post.content, post.published))
-    new_post = cursor.fetchone()  # this fetches one data with the SQL command
+    # cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, # '%s' is for security, it basically sanitizes the input
+    # (post.title, post.content, post.published))
+    # new_post = cursor.fetchone()  # this fetches one data with the SQL command
 
-    conn.commit() # this is necessary when you want to push changes to your database like saving stuff
+    # conn.commit() # this is necessary when you want to push changes to your database like saving stuff
+
+    new_post = models.Post(**post.dict()) # creation of post
+    db.add(new_post) # add post to database
+    db.commit() # commit or save it
+    db.refresh(new_post) # this retrieves the newly created post and stores it in that variable
 
     return {"data": new_post}  # it is conventional for the backend to send back the post detials including the id after storing
 
 
 @app.get("/posts/{id}")
-def get_post(id: int, response: Response):  # this is basically typecasting, but it handles error responses
-    cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
-    post = cursor.fetchone()
+def get_post(id: int, db: Session = Depends(get_db)):  # this is basically typecasting, but it handles error responses
+    # cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
+    # post = cursor.fetchone()
+
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND  # editing the status code of the response
         # return {"message": f"Post with id {id} was not found"}
@@ -84,25 +101,35 @@ def get_post(id: int, response: Response):  # this is basically typecasting, but
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT) # 204 is the status code sent after deleting something
-def delete_post(id: int):
+def delete_post(id: int,  db: Session = Depends(get_db)):
 
-    cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id))) # it is convention to return deleted post
-    deleted_post = cursor.fetchone()
-    conn.commit() # you must commit when you want to make changes to the database
-    if not deleted_post:
+    # cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id))) # it is convention to return deleted post
+    # deleted_post = cursor.fetchone()
+    # conn.commit() # you must commit when you want to make changes to the database
+
+    post = db.query(models.Post).filter(models.Post.id == id)
+    if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
+
+    post.delete(synchronize_session=False)
+    db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 
 @app.put("/posts/{id}")
-def update_post(id: int, post: Post):
+def update_post(id: int, post: Post,  db: Session = Depends(get_db)):
 
-    cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """, (post.title, post.content, post.published, str(id)))
-    updated_post = cursor.fetchone()
-    conn.commit()
-    if not updated_post:
+    # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """, (post.title, post.content, post.published, str(id)))
+    # updated_post = cursor.fetchone()
+    # conn.commit()
+
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
 
-    return {"data": updated_post}
+    post_query.update(post.dict(), synchronize_session=False) # unlike creating a post, update takes in the dictionary as opposed to the unpacked dictionary for create
+    db.commit()
+    return {"data": post_query.first()}
+
