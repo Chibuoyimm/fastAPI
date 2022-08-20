@@ -1,6 +1,5 @@
 from typing import Optional, List
 from multiprocessing import synchronize
-from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from random import randrange
@@ -8,10 +7,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor # this is just to display the column names because by default(psycopg2), they don't show
 import time
 from sqlalchemy.orm import Session
-import models
-import schemas
+import utils, schemas, models
 from database import engine, get_db
-
 
 models.Base.metadata.create_all(bind=engine) # this creates all the tables/models. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
@@ -132,6 +129,10 @@ def update_post(id: int, post: schemas.PostCreate,  db: Session = Depends(get_db
 
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
+    # hash the password - user.password
+    user.password = utils.hash(user.password)
+
     new_user = models.User(**user.dict())
     db.add(new_user)
     db.commit()
