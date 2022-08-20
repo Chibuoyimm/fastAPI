@@ -19,18 +19,18 @@ app = FastAPI()
 
 
 
-while True:
-    try:
-        conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres',
-        password='Chiboy17', cursor_factory=RealDictCursor)
-        cursor = conn.cursor() # this is what is used to execute SQL statements
-        print("Database connection was successful")
-        break
+# while True:
+#     try:
+#         conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres',
+#         password='Chiboy17', cursor_factory=RealDictCursor)
+#         cursor = conn.cursor() # this is what is used to execute SQL statements
+#         print("Database connection was successful")
+#         break
 
-    except Exception as error:
-        print("Connecting to database failed")
-        print("Error", error)
-        time.sleep(2)
+#     except Exception as error:
+#         print("Connecting to database failed")
+#         print("Error", error)
+#         time.sleep(2)
 
 
 my_posts = [{"title": "title of post 1", "content": "content of the post 1", "id": 1}, {"title": "favorite food",
@@ -128,4 +128,14 @@ def update_post(id: int, post: schemas.PostCreate,  db: Session = Depends(get_db
     post_query.update(post.dict(), synchronize_session=False) # unlike creating a post, update takes in the dictionary as opposed to the unpacked dictionary for create
     db.commit()
     return post_query.first()
+
+
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
 
