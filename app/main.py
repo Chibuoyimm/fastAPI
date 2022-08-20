@@ -1,27 +1,23 @@
+from typing import Optional, List
 from multiprocessing import synchronize
 from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
-from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor # this is just to display the column names because by default(psycopg2), they don't show
 import time
 from sqlalchemy.orm import Session
-from . import models
-from .database import engine, get_db
+import models
+import schemas
+from database import engine, get_db
+
 
 models.Base.metadata.create_all(bind=engine) # this creates all the tables/models. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
 app = FastAPI()
 
 
-
-class Post(BaseModel):  # defining a schema of what to expect from the frontend and this automitcally does the validation
-    title: str
-    content: str
-    published: bool = True
-    # rating: Optional[int] = None
 
 while True:
     try:
@@ -57,16 +53,16 @@ def root():
 
 
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Post])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
     # posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    return posts
 
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED) # this is to change status code; 201 status code is mostly used after post requests
-def create_posts(post: Post, db: Session = Depends(get_db)): # post is a pydantic model
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post) # this is to change status code; 201 status code is mostly used after post requests
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)): # post is a pydantic model
 
     # post.dict() is to convert a pydantic model to a dictionary
 
@@ -81,10 +77,10 @@ def create_posts(post: Post, db: Session = Depends(get_db)): # post is a pydanti
     db.commit() # commit or save it
     db.refresh(new_post) # this retrieves the newly created post and stores it in that variable
 
-    return {"data": new_post}  # it is conventional for the backend to send back the post detials including the id after storing
+    return new_post  # it is conventional for the backend to send back the post detials including the id after storing
 
 
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)):  # this is basically typecasting, but it handles error responses
     # cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
     # post = cursor.fetchone()
@@ -97,7 +93,7 @@ def get_post(id: int, db: Session = Depends(get_db)):  # this is basically typec
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} was not found")
 
 
-    return {"post_detail": post}
+    return post
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT) # 204 is the status code sent after deleting something
@@ -118,8 +114,8 @@ def delete_post(id: int,  db: Session = Depends(get_db)):
 
 
 
-@app.put("/posts/{id}")
-def update_post(id: int, post: Post,  db: Session = Depends(get_db)):
+@app.put("/posts/{id}", response_model=schemas.Post)
+def update_post(id: int, post: schemas.PostCreate,  db: Session = Depends(get_db)):
 
     # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """, (post.title, post.content, post.published, str(id)))
     # updated_post = cursor.fetchone()
@@ -131,5 +127,5 @@ def update_post(id: int, post: Post,  db: Session = Depends(get_db)):
 
     post_query.update(post.dict(), synchronize_session=False) # unlike creating a post, update takes in the dictionary as opposed to the unpacked dictionary for create
     db.commit()
-    return {"data": post_query.first()}
+    return post_query.first()
 
