@@ -31,3 +31,7 @@ class UserOut(BaseModel): # response schema for the user
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

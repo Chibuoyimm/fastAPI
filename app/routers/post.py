@@ -5,9 +5,12 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/posts",  # this simplifies having to put "/posts" in all of your routes, it's a base prefix for all the routes here
+    tags=["Posts"]  # this is to group them on the documentation
+)
 
-@router.get("/posts", response_model=List[schemas.Post])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
+@router.get("/", response_model=List[schemas.Post])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
     # posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
@@ -15,7 +18,7 @@ def get_posts(db: Session = Depends(get_db)):
     return posts
 
 
-@router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=schemas.Post) # this is to change status code; 201 status code is mostly used after post requests
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post) # this is to change status code; 201 status code is mostly used after post requests
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)): # post is a pydantic model
 
     # post.dict() is to convert a pydantic model to a dictionary
@@ -34,7 +37,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)): # pos
     return new_post  # it is conventional for the backend to send back the post detials including the id after storing
 
 
-@router.get("/posts/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)):  # this is basically typecasting, but it handles error responses
     # cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
     # post = cursor.fetchone()
@@ -50,7 +53,7 @@ def get_post(id: int, db: Session = Depends(get_db)):  # this is basically typec
     return post
 
 
-@router.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT) # 204 is the status code sent after deleting something
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT) # 204 is the status code sent after deleting something
 def delete_post(id: int,  db: Session = Depends(get_db)):
 
     # cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING * """, (str(id))) # it is convention to return deleted post
@@ -68,7 +71,7 @@ def delete_post(id: int,  db: Session = Depends(get_db)):
 
 
 
-@router.put("/posts/{id}", response_model=schemas.Post)
+@router.put("/{id}", response_model=schemas.Post)
 def update_post(id: int, post: schemas.PostCreate,  db: Session = Depends(get_db)):
 
     # cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """, (post.title, post.content, post.published, str(id)))
