@@ -6,17 +6,18 @@ from app import database, schemas, models, utils, oauth2
 
 router = APIRouter(tags=["Authentication"]) # tagss is for sectioning in the documentation
 
-@router.post('/login')
+@router.post('/login', response_model=schemas.Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
 
-    # OAuth2PasswordRequestForm returns just our username (not email) and password
+    # OAuth2PasswordRequestForm returns just our username (not email) and password and it picks the credentials as form data
+
     user = db.query(models.User).filter(models.User.email == user_credentials.username).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
 
     if not utils.verify(user_credentials.password, user.password):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
 
     # create a token
     # return token
