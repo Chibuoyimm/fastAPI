@@ -3,25 +3,6 @@ from datetime import datetime
 from typing import Optional
 
 
-
-class PostBase(BaseModel):  # defining a schema of what to expect from the frontend and this automitcally does the validation
-    title: str
-    content: str
-    published: bool = True
-    # rating: Optional[int] = None
-
-class PostCreate(PostBase):
-    pass
-
-
-class Post(PostBase): # response schema for posts
-    id: int
-    created_at: datetime
-    owner_id: int
-
-    class Config:
-        orm_mode = True
-
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -37,6 +18,26 @@ class UserOut(BaseModel): # response schema for the user
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PostBase(BaseModel):  # defining a schema of what to expect from the frontend and this automitcally does the validation
+    title: str
+    content: str
+    published: bool = True
+    # rating: Optional[int] = None
+
+class PostCreate(PostBase):
+    pass
+
+class Post(PostBase): # response schema for posts
+    id: int
+    created_at: datetime
+    owner_id: int
+    owner: UserOut
+
+    class Config:
+        orm_mode = True
+
+
 
 class Token(BaseModel):
     access_token: str
