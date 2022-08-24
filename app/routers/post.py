@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from app.database import get_db
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app import models, schemas, oauth2
@@ -11,10 +11,11 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[schemas.Post])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
-def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
+def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
     # posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
-    posts = db.query(models.Post).all()
+    print(limit)
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
 
