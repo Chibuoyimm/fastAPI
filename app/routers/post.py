@@ -28,7 +28,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db), curren
     # new_post = cursor.fetchone()  # this fetches one data with the SQL command
 
     # conn.commit() # this is necessary when you want to push changes to your database like saving stuff
-    new_post = models.Post(**post.dict()) # creation of post
+    new_post = models.Post(owner_id=current_user.id, **post.dict()) # creation of post and embedding the id of current logged in user as the owner/creator
     db.add(new_post) # add post to database
     db.commit() # commit or save it
     db.refresh(new_post) # this retrieves the newly created post and stores it in that variable
@@ -59,11 +59,15 @@ def delete_post(id: int,  db: Session = Depends(get_db), current_user: int = Dep
     # deleted_post = cursor.fetchone()
     # conn.commit() # you must commit when you want to make changes to the database
 
-    post = db.query(models.Post).filter(models.Post.id == id)
-    if not post.first():
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
 
-    post.delete(synchronize_session=False)
+    if post.owner_id != current_user.id: # to check if it is the owner of the post trying to delete it
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
+
+    post_query.delete(synchronize_session=False)
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -80,6 +84,9 @@ def update_post(id: int, post: schemas.PostCreate,  db: Session = Depends(get_db
     post_query = db.query(models.Post).filter(models.Post.id == id)
     if not post_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
+
+    if post_query.first().owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
 
     post_query.update(post.dict(), synchronize_session=False) # unlike creating a post, update takes in the dictionary as opposed to the unpacked dictionary for create
     db.commit()

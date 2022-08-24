@@ -17,6 +17,7 @@ class PostCreate(PostBase):
 class Post(PostBase): # response schema for posts
     id: int
     created_at: datetime
+    owner_id: int
 
     class Config:
         orm_mode = True
