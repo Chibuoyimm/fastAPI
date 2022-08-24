@@ -33,7 +33,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db), curren
     db.commit() # commit or save it
     db.refresh(new_post) # this retrieves the newly created post and stores it in that variable
 
-    return new_post  # it is conventional for the backend to send back the post detials including the id after storing
+    return new_post  # it is conventional for the backend to send back the post details including the id after storing
 
 
 @router.get("/{id}", response_model=schemas.Post)
