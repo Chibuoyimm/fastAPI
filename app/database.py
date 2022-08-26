@@ -4,8 +4,9 @@ from sqlalchemy.orm import sessionmaker
 import psycopg2
 from psycopg2.extras import RealDictCursor # this is just to display the column names because by default(psycopg2), they don't show
 import time
+from config import settings
 
-SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:Chiboy17@localhost/fastapi'
+SQLALCHEMY_DATABASE_URL = f'postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}'
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) # you need a session with the database

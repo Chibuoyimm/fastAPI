@@ -2,6 +2,7 @@ from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from app.database import get_db
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app import models, schemas, oauth2
 
@@ -10,12 +11,19 @@ router = APIRouter(
     tags=["Posts"]  # this is to group them on the documentation
 )
 
-@router.get("/", response_model=List[schemas.Post])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
+
+@router.get("/", response_model=List[schemas.PostOut])  # you have to let the schema know that a list of data is coming through otherwise, it will return an error because it will think it's just one data
 def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # cursor.execute(""" SELECT * FROM posts """)  # this is how you type SQL commands
     # posts = cursor.fetchall()  # this actually executes the SQL command, and fetches multiple data
-    print(limit)
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
+    # posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
+    # join is by default a left inner join in sqlalchemy, and left join is outer by default unless you specify
+    posts = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(  # label is to rename the column
+        models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(
+        models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
     return posts
 
 
@@ -37,12 +45,15 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db), curren
     return new_post  # it is conventional for the backend to send back the post details including the id after storing
 
 
-@router.get("/{id}", response_model=schemas.Post)
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):  # this is basically typecasting, but it handles error responses
     # cursor.execute(""" SELECT * FROM posts WHERE id = %s """, (str(id)))
     # post = cursor.fetchone()
 
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(  # label is to rename the column
+        models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()
 
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND  # editing the status code of the response

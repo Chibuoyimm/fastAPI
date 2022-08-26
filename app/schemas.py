@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
-
+from pydantic.types import conint
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -37,6 +37,12 @@ class Post(PostBase): # response schema for posts
     class Config:
         orm_mode = True
 
+class PostOut(BaseModel):
+    Post: Post
+    votes: int
+
+    class Config:
+        orm_mode = True
 
 
 class Token(BaseModel):
@@ -45,3 +51,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+class Vote(BaseModel):
+    post_id: int
+    dir: conint(ge=0, le=1) # greater or equal to 0 or less or equal to 1. 0 is to remove a vote, while 1 is to add a vote
