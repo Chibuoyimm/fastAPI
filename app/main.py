@@ -5,7 +5,7 @@ from database import engine
 from routers import post, user, auth, vote
 from config import settings
 
-models.Base.metadata.create_all(bind=engine) # this creates all the tables/models. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
+# models.Base.metadata.create_all(bind=engine) this creates all the tables/models with sqlalchemy. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
 app = FastAPI()
 
