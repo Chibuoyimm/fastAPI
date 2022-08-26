@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import models
-from database import engine
-from routers import post, user, auth, vote
-from config import settings
+from app.database import engine
+from app.routers import post, user, auth, vote
+from app.config import settings
 
 # models.Base.metadata.create_all(bind=engine) this creates all the tables/models with sqlalchemy. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
