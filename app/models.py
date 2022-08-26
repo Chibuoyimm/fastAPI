@@ -38,8 +38,8 @@ class Vote(Base):
     __tablename__ = "votes"
     __table_args__ = {'keep_existing': True} # not necessary. had to do wtih filename changes, i think
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete=CASCADE), primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id", ondelete=CASCADE), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
 
 
 
