@@ -1,5 +1,4 @@
 alembic==1.8.1
-anyio==3.6.1
 -e git+https://github.com/Chibuoyimm/fastAPI.git@c7319676d2802908685a24b8818b4c455676bc78#egg=app
 asgiref==3.4.1
 bcrypt==3.2.2
