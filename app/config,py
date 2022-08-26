@@ -1,9 +1,0 @@
-from pydantic import BaseSettings
-
-
-class Settings(BaseSettings): # pydantic is case insensitve
-    path: int # pydantic tries to typecast into your specified datatype
-    database_username: str = "postgres"
-    secret_key: str = "348240grsln80wh"
-
-settings = Settings()

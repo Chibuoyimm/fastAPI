@@ -3,7 +3,7 @@ from fastapi import FastAPI
 import models
 from database import engine
 from routers import post, user, auth
-from config import settings
+from config import Settings
 
 models.Base.metadata.create_all(bind=engine) # this creates all the tables/models. kind of like migrate in django but this DOES NOT MODIFY EXIXSTING TABLES
 
