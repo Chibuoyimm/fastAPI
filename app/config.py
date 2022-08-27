@@ -12,7 +12,7 @@ class Settings(BaseSettings): # pydantic is not case sensitive
     access_token_expire_minutes: int
 
     class Config:
-        env_file = r"C:\Users\onuig\Desktop\fastapi1\.env"
+        env_file = ".env"
 
 
 settings = Settings()
