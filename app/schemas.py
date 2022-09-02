@@ -28,7 +28,7 @@ class PostBase(BaseModel):  # defining a schema of what to expect from the front
 class PostCreate(PostBase):
     pass
 
-class Post(PostBase): # response schema for posts
+class Post(PostBase):
     id: int
     created_at: datetime
     owner_id: int
@@ -37,7 +37,7 @@ class Post(PostBase): # response schema for posts
     class Config:
         orm_mode = True
 
-class PostOut(BaseModel):
+class PostOut(BaseModel): # response schema for posts
     Post: Post
     votes: int
 
