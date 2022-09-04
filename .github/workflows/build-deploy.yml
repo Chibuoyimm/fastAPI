@@ -73,4 +73,4 @@ deploy:
 
   steps:
     - name: deploying stuff
-    run: echo ""going to deploy some stuff
+      run: echo "going to deploy some stuff"
